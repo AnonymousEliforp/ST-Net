@@ -21,8 +21,6 @@
 
         If using lower-res TIF file , TIF image can be loaded directly by openslide. NOTE: Branch individual_window is not set up to do this. individual_window is for CASE 2 below.
 
-            
-
         <CASE 2> Using full-res TIF file (around 40,000px by 40,000px)
 
         Openslide cannot load full-res TIF file. Tiling must be done prior to running the model, using the script `crop_to_spot.py` in utilities branch of this repo. Then, create the directory `HE_BC30001_C1` and copy tiled TIFs inside.
@@ -78,5 +76,7 @@
 - `generate_figures.sh`: Generates figures to visualize model prediction compared with ground truth.
 
 ![generate_figures](./readme_images/generate_figures.png)
+
+- `zip_figures.sh`: Zip figures for specified patient. Useful if you are using a server and want to easily download all output images on your local computer.
 
 - `clear_spatial.sh`: Removes .pkl files in data/hist2tscript and data/hist2tscript-patch directory. Used if you wish to change the data for training and testing. After clearing spatial, you must run `prepare_spatial.sh` (with the new data) before running training again.
