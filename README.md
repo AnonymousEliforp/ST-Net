@@ -1,134 +1,48 @@
-Integrating spatial gene expression and breast tumour morphology via deep learning
-----------------------------------------------------------------------------------
-
-ST-Net is a machine learning model for predicting spatial transcriptomics measurements from haematoxylin-and-eosin-stained pathology slides.
-For more details, see the acompanying paper,
-
-> [**Integrating spatial gene expression and breast tumour morphology via deep learning**](https://rdcu.be/b46sX)<br/>
-  by Bryan He, Ludvig Bergenstråhle, Linnea Stenbeck, Abubakar Abid, Alma Andersson, Åke Borg, Jonas Maaskola, Joakim Lundeberg & James Zou.<br/>
-  <i>Nature Biomedical Engineering</i> (2020).
-
-
-
-Downloading Dataset and Configuring Paths
------------------------------------------
-By default, the raw data must be downloaded from [here](https://data.mendeley.com/datasets/29ntw7sh4r) and placed at `data/hist2tscript/`.
-The processed files will then be written to `data/hist2tscript-patch/`.
-These locations  can be changed by creating a config file (the priority for the filename is `stnet.cfg`, `.stnet.cfg`, `~/stnet.cfg`, `~/.stnet.cfg`).
-An example config file is given as `example.cfg`.
-
-Preparing Spatial Data
-----------------------
-This code assumes that the raw data has been extracted into SPATIAL_RAW_ROOT as specified by the config file.
-```
-python3 -m stnet prepare spatial  # caches the counts and tumor labels into npz files
-bin/create_tifs.sh                  # converts jpegs into tiled tif files
-```
-
-Training models
+Before training
 ---------------
 
-The models for the main results can be trained by running:
+1. Ensure that data is copied into data/hist2tscript/
 ```
-ngenes=250
-model=densenet121
-window=224
-for patient in `python3 -m stnet patients`
-do
-    bin/cross_validate.py output/${model}_${window}/top_${ngenes}/${patient}_ 4 50 ${patient} --lr 1e-6 --window ${window} --model ${model} --pretrain --average --batch 32 --workers 7 --gene_n ${ngenes} --norm
-done
-```
+Required files
+==============
+Using example of HCC1 (coded as BC30001, replicate C1) 
 
-To run the comparison for different window sizes:
-```
-ngenes=250
-model=densenet121
-for window in 128 299 512
-do
-    for patient in `python3 -m stnet patients`
-    do
-        bin/cross_validate.py output/${model}_${window}/top_${ngenes}/${patient}_ 4 50 ${patient} --lr 1e-6 --window ${window} --model ${model} --pretrain --average --batch 32 --workers 7 --gene_n ${ngenes} --norm
-    done
-done
-```
+CSV/TSV files:
+--------------
+1. BC30001_C1_Coords.tsv.gz 
+2. BC30001_C1_stdata.tsv.gz
+3. spots_BC30001_C1.csv.gz
 
-To run the comparison for different magnifications:
-```
-ngenes=250
-window=224
-model=densenet121
-for downsample in 2 4
-do
-    for patient in `python3 -m stnet patients`
-    do
-        bin/cross_validate.py output/${model}_${window}/top_${ngenes}_downsample_${downsample}/${patient}_ 4 50 ${patient} --lr 1e-6 --window ${window} --model ${model} --pretrain --average --batch 32 --workers 4 --gene_n ${ngenes} --norm --downsample ${downsample}
-    done
-done
-```
+HnE image:
+----------
+<CASE 1> Using lower-res TIF file (around 4000px*4000px)
+If using lower-res TIF file , TIF image can be loaded directly by openslide. NOTE: Branch individual_window is not set up to do this currently.:
+4. HE_BC30001_C1.tif 
 
-To run the comparison against random initialization:
-```
-ngenes=250
-model=densenet121
-window=224
-for patient in `python3 -m stnet patients`
-do
-    bin/cross_validate.py output/${model}_${window}/top_${ngenes}_rand/${patient}_ 4 50 ${patient} --lr 1e-6 --window ${window} --model ${model} --average --batch 32 --workers 7 --gene_n ${ngenes} --norm
-done
-```
+data
+├── hist2tscript
+|   ├── BC30001_C1_Coords.tsv.gz
+|   ├── BC30001_C1_stdata.tsv.gz
+|   ├── spots_BC30001_C1.csv.gz
+|   └── HE_BC30001_C1.tif
 
-To run the comparison against individual training of genes:
-```
-ngenes=250
-model=densenet121
-window=224
-for i in `seq 10`
-do
-    ensg=`python3 -m stnet ensg ${i}`
-    for patient in `python3 -m stnet patients`
-    do
-        bin/cross_validate.py output/${model}_${window}/top_${ngenes}_singletask_${i}/${patient}_ 4 50 ${patient} --lr 1e-6 --window ${window} --model ${model} --pretrain --average --batch 32 --workers 7 --gene_list ${ensg} --norm
-    done
-done
-```
+<CASE 2> Using full-res TIF file (around 40,000px by 40,000px)
+Openslide cannot load full-res TIF file. Tiling must be done prior to running the model, using the script `crop_to_spot.py` in utilities branch of this repo.
+4. Create directory `HE_BC30001_C1` and copy tiled TIFs inside. The example file tree is shown below.
 
-To run the comparison against hand-crafted features:
-```
-ngenes=250
-window=224
-model=rf
-for patient in `python3 -m stnet patients`
-do
-    root=output/${model}_${window}/top_${ngenes}/${patient}_ 
-    python3 -m stnet run_spatial --gene --logfile ${root}gene.log --epochs 1 --pred_root ${root} --testpatients ${patient} --window ${window} --model ${model} --batch 32 --workers 7 --gene_n ${ngenes} --norm --cpu
-done
-```
+data
+├── hist2tscript
+|   ├── BC30001_C1_Coords.tsv.gz
+|   ├── BC30001_C1_stdata.tsv.gz
+|   ├── spots_BC30001_C1.csv.gz
+|   ├── HE_BC30001_C1
+|   |   ├── BC30001_11_11.tif
+|   |   ├── BC30001_11_13.tif
+|   |   ├── BC30001_11_15.tif
+...
+|   |   ├── BC30001_117_37.tif
+|   |   ├── BC30001_117_39.tif
+|   |   └── BC30001_117_41.tif
+        <3043 TIF files corresponding to 3043 in-tissue spots>
 
-Analysis
---------
-
-The main results can be generated by running:
-```
-bin/generate_figs.py output/densenet121_224/top_250/ cv
-```
-
-The corresponding results for the comparisons are generated by running:
-```
-for i in output/densenet121_224/*; do bin/generate_figs.py $i cv; done
-```
-
-Generating Figures
-------------------
-
-The following blocks of code are used for generating several of the figures.
-
-Visualization of prediction across whole slide:
-```
-bin/visualize.py output/sherlock/BC23450_cv.npz --gene FASN
-bin/visualize.py output/sherlock/BC23903_cv.npz --gene FASN
-```
-
-UMAP Clustering:
-```
-bin/cluster.py
 ```
