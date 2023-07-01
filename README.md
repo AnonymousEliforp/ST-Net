@@ -77,6 +77,6 @@
 
 ![generate_figures](./readme_images/generate_figures.png)
 
-- `zip_figures.sh`: Zip figures for specified patient. Useful if you are using a server and want to easily download all output images on your local computer.
+- `zip_figures.sh`: Zip figures for specified patient. Useful if you are using a server and want to easily download all output images to your local computer.
 
 - `clear_spatial.sh`: Removes .pkl files in data/hist2tscript and data/hist2tscript-patch directory. Used if you wish to change the data for training and testing. After clearing spatial, you must run `prepare_spatial.sh` (with the new data) before running training again.
