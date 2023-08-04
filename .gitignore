@@ -15,7 +15,12 @@ heterogeneity/outputs/*
 
 # My own additions
 # Folders
+data-*
+data/hist2tscript/HE_*
 data/hist2tscript-patch
+log/
+output/
+fig/
 
 # Files
 *.tsv.gz

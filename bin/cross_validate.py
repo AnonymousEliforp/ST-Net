@@ -134,7 +134,8 @@ def cross_validate(root, extra_args=[]):
     return best_loss, best_epoch
 
 logger.info("Searching for epochs")
-_, best_epoch = cross_validate(os.path.join(args.root + "cv", "cv_"))
+# _, best_epoch = cross_validate(os.path.join(args.root + "cv", "cv_"))
+best_epoch = args.epochs
 
 try:
     os.symlink("{}{}.npz".format(os.path.basename(args.root), best_epoch), "{}cv.npz".format(args.root))

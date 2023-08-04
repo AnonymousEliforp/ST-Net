@@ -75,7 +75,7 @@ def run_spatial(args=None):
         window = args.window
         if args.window_raw is not None:
             window = args.window_raw
-        train_dataset = stnet.datasets.Spatial(train_patients, window=window, gene_filter=args.gene_filter, downsample=args.downsample, norm=args.norm, gene_transform=args.gene_transform, transform=torchvision.transforms.ToTensor(), feature=(args.model == "rf"))
+        train_dataset = stnet.datasets.Spatial(train_patients, window=window, gene_filter=args.gene_filter, downsample=args.downsample, norm=args.norm, gene_transform=args.gene_transform, transform=torchvision.transforms.ToTensor(), feature=(args.model == "rf"), cropped_image_dir="data/hist2tscript")
         train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch, num_workers=args.workers, shuffle=True, pin_memory=args.gpu)
 
         # Estimate mean and covariance
@@ -116,7 +116,7 @@ def run_spatial(args=None):
             transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor(),
                                                         torchvision.transforms.Normalize(mean=mean, std=std)])
         # TODO: random crops on test too?
-        test_dataset = stnet.datasets.Spatial(test_patients, transform, window=args.window, gene_filter=args.gene_filter, downsample=args.downsample, norm=args.norm, gene_transform=args.gene_transform, feature=(args.model == "rf"))
+        test_dataset = stnet.datasets.Spatial(test_patients, transform, window=args.window, gene_filter=args.gene_filter, downsample=args.downsample, norm=args.norm, gene_transform=args.gene_transform, feature=(args.model == "rf"), cropped_image_dir="data/hist2tscript")
 
         test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch, num_workers=args.workers, shuffle=True, pin_memory=args.gpu)
 

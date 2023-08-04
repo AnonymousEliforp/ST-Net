@@ -32,6 +32,8 @@ import pathlib
 import statistics
 import collections
 
+from PIL import Image
+
 # TODO: make this a visiondataset
 class Spatial(torch.utils.data.Dataset):
     def __init__(self,
@@ -45,7 +47,8 @@ class Spatial(torch.utils.data.Dataset):
                  gene_transform="log",
                  downsample=1,
                  norm=None,
-                 feature=False):
+                 feature=False,
+                 cropped_image_dir=None):
 
         self.dataset = sorted(glob.glob("{}/*/*/*.npz".format(root)))
         if patient is not None:
@@ -67,6 +70,7 @@ class Spatial(torch.utils.data.Dataset):
         self.gene_transform = gene_transform
         self.norm = norm
         self.feature = feature
+        self.cropped_image_dir = cropped_image_dir
 
         with open(root + "/subtype.pkl", "rb") as f:
             self.subtype = pickle.load(f)
@@ -79,9 +83,9 @@ class Spatial(torch.utils.data.Dataset):
 
         self.slide = collections.defaultdict(dict)
         # TODO: this can be parallelized
-        for (patient, section) in set([(d.split("/")[-2], d.split("/")[-1].split("_")[0]) for d in self.dataset]):
-            # self.slide[patient][section] = openslide.open_slide("{}/{}/{}/{}_{}.tif".format(stnet.config.SPATIAL_RAW_ROOT, self.subtype[patient], patient, patient, section))
-            self.slide[patient][section] = openslide.open_slide("{}HE_{}_{}.tif".format(stnet.config.SPATIAL_RAW_ROOT, patient, section))
+        # for (patient, section) in set([(d.split("/")[-2], d.split("/")[-1].split("_")[0]) for d in self.dataset]):
+        #     # self.slide[patient][section] = openslide.open_slide("{}/{}/{}/{}_{}.tif".format(stnet.config.SPATIAL_RAW_ROOT, self.subtype[patient], patient, patient, section))
+        #     self.slide[patient][section] = openslide.open_slide("{}HE_{}_{}.tif".format(stnet.config.SPATIAL_RAW_ROOT, patient, section))
 
         if gene_filter is None or gene_filter == "none":
             self.gene_filter = None
@@ -129,9 +133,14 @@ class Spatial(torch.utils.data.Dataset):
             if self.cache and pathlib.Path(cached_image).exists():
                 X = PIL.Image.open(cached_image)
             else:
-                slide = self.slide[patient][section]
-                X = slide.read_region((pixel[0] - orig_window // 2, pixel[1] - orig_window // 2), 0, (orig_window, orig_window))
+                # slide = self.slide[patient][section]
+                # X = slide.read_region((pixel[0] - orig_window // 2, pixel[1] - orig_window // 2), 0, (orig_window, orig_window))
+                this_image = f"{self.cropped_image_dir}/HE_{patient}_{section}/{patient}_{coord[0]}_{coord[1]}.tif"
+                X = Image.open(this_image)
                 X = X.convert("RGB")
+
+                # [24-MAR-23] DISABLED ALL LOGGER.DEBUG STATEMENTS FROM "/home/tester/miniconda3/envs/<env_name>/lib/python3.9/site-packages/PIL/TiffImagePlugin.py"
+                # To enable logger.debug statements again, just replace all "# logger.debug" with "logger.debug"
 
                 if self.cache:
                     X.save(cached_image)
